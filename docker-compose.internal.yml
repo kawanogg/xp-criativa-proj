@@ -1,0 +1,210 @@
+networks:
+  net_interna:
+    driver: bridge
+    name: net_interna   # nome fixo para ser referenciado pelo compose da DMZ
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24
+
+services:
+
+  # ─────────────────────────────────────────────
+  # E-commerce (Flask mock)
+  # ─────────────────────────────────────────────
+  ecommerce:
+    build:
+      context: ./internal/ecommerce
+    container_name: ecommerce
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.10
+    environment:
+      - DATABASE_URL=postgresql://farmacia:farmacia2026@postgres:5432/farmaciadb
+      - KEYCLOAK_URL=http://keycloak:8080
+      - KEYCLOAK_REALM=farmacia
+      - KEYCLOAK_CLIENT_ID=ecommerce-app
+      - SECRET_KEY=supersecretkey2026
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # Hardening do container
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+  # ─────────────────────────────────────────────
+  # PostgreSQL — banco de dados principal
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.11
+    environment:
+      - POSTGRES_DB=farmaciadb
+      - POSTGRES_USER=farmacia
+      - POSTGRES_PASSWORD=farmacia2026
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./internal/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U farmacia -d farmaciadb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # Hardening via isolamento de rede (net_interna) — cap_drop removido pois
+    # o PostgreSQL precisa de permissões de CHOWN para inicializar o volume de dados
+
+  # ─────────────────────────────────────────────
+  # Keycloak IAM + MFA (standalone, H2 embutido)
+  # ─────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0
+    container_name: keycloak
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.12
+    ports:
+      - "8080:8080"
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=Admin2026!
+      - KC_HTTP_ENABLED=true
+      - KC_HOSTNAME_STRICT=false
+    command: >
+      start-dev
+      --import-realm
+    volumes:
+      - ./internal/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # Wazuh Manager
+  # ─────────────────────────────────────────────
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.14.7
+    container_name: wazuh-manager
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.20
+    ports:
+      - "1514:1514/udp"   # agentes (UDP)
+      - "1515:1515"       # registro de agentes
+      - "514:514/udp"     # syslog
+      - "55000:55000"     # API REST do Wazuh
+    environment:
+      - INDEXER_URL=https://wazuh-indexer:9200
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=admin
+      - FILEBEAT_SSL_VERIFICATION_MODE=none
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=WazuhApi2026!
+    volumes:
+      - wazuh_api_config:/var/ossec/api/configuration
+      - wazuh_etc:/var/ossec/etc
+      - wazuh_logs:/var/ossec/logs
+      - wazuh_queue:/var/ossec/queue
+      - wazuh_var_multigroups:/var/ossec/var/multigroups
+      - wazuh_integrations:/var/ossec/integrations
+      - wazuh_active_response:/var/ossec/active-response/bin
+      - wazuh_agentless:/var/ossec/agentless
+      - wazuh_wodles:/var/ossec/wodles
+      - filebeat_etc:/etc/filebeat
+      - filebeat_var:/var/lib/filebeat
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # Wazuh Indexer (OpenSearch)
+  # ─────────────────────────────────────────────
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.14.7
+    container_name: wazuh-indexer
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.21
+    environment:
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=WazuhIndexer2026!
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - wazuh_indexer_data:/var/lib/wazuh-indexer
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sk --cert /usr/share/wazuh-indexer/config/certs/admin.pem --key /usr/share/wazuh-indexer/config/certs/admin-key.pem https://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # Wazuh Dashboard (UI)
+  # ─────────────────────────────────────────────
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.14.7
+    container_name: wazuh-dashboard
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.22
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./internal/wazuh/opensearch_dashboards.yml:/usr/share/wazuh-dashboard/config/opensearch_dashboards.yml:ro
+    environment:
+      - INDEXER_USERNAME=admin
+      - INDEXER_PASSWORD=admin
+      - WAZUH_API_URL=https://wazuh-manager
+      - DASHBOARD_USERNAME=kibanaserver
+      - DASHBOARD_PASSWORD=kibanaserver
+      - API_USERNAME=wazuh-wui
+      - API_PASSWORD=WazuhApi2026!
+    depends_on:
+      wazuh-indexer:
+        condition: service_healthy
+      wazuh-manager:
+        condition: service_started
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────
+  # Wazuh Agent (Interna) — monitora e-commerce e postgres
+  # ─────────────────────────────────────────────
+  wazuh-agent-internal:
+    image: wazuh/wazuh-agent:4.14.7
+    container_name: wazuh-agent-internal
+    networks:
+      net_interna:
+        ipv4_address: 172.21.0.23
+    environment:
+      - WAZUH_MANAGER_SERVER=wazuh-manager
+      - WAZUH_AGENT_NAME=agent-internal
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  wazuh_api_config:
+  wazuh_etc:
+  wazuh_logs:
+  wazuh_queue:
+  wazuh_var_multigroups:
+  wazuh_integrations:
+  wazuh_active_response:
+  wazuh_agentless:
+  wazuh_wodles:
+  filebeat_etc:
+  filebeat_var:
+  wazuh_indexer_data:
+

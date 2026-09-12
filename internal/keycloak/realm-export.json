@@ -1,0 +1,106 @@
+{
+  "realm": "farmacia",
+  "enabled": true,
+  "displayName": "Rede de Farmácias",
+  "displayNameHtml": "<b>Rede de Farmácias</b>",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "maxDeltaTimeSeconds": 43200,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      { "name": "admin",         "description": "Administrador do sistema" },
+      { "name": "farmaceutico",  "description": "Farmacêutico (acesso a prontuários)" },
+      { "name": "cliente",       "description": "Cliente final" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ecommerce-app",
+      "name": "E-commerce Farmácia",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "ecommerce-secret-2026",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": [
+        "http://localhost/*",
+        "http://ecommerce.farmacia.local/*"
+      ],
+      "webOrigins": ["*"],
+      "protocol": "openid-connect",
+      "defaultClientScopes": ["web-origins", "roles", "profile", "email"],
+      "optionalClientScopes": ["address", "phone", "offline_access"]
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "enabled": true,
+      "defaultAction": true,
+      "priority": 10
+    }
+  ],
+  "browserSecurityHeaders": {
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xContentTypeOptions": "nosniff",
+    "xRobotsTag": "none",
+    "xFrameOptions": "SAMEORIGIN",
+    "xXSSProtection": "1; mode=block",
+    "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+  },
+  "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and specialChars(1) and digits(1) and notUsername(undefined)",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "users": [
+    {
+      "username": "admin-farmacia",
+      "email": "admin@farmacia.local",
+      "firstName": "Admin",
+      "lastName": "Farmácia",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin2026!@",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["admin", "farmaceutico"]
+    },
+    {
+      "username": "farmaceutico1",
+      "email": "farmaceutico@farmacia.local",
+      "firstName": "João",
+      "lastName": "Farmacêutico",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Farma2026!@",
+          "temporary": true
+        }
+      ],
+      "realmRoles": ["farmaceutico"]
+    }
+  ]
+}

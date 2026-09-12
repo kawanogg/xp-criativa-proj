@@ -1,0 +1,6 @@
+id_pseudonimo,nome_mascarado,email_pseudonimo,faixa_etaria,genero,localidade,total_pedidos,valor_total_faixa,tem_prontuario
+CPF-86594FD36F33,Maria ******,user-ac844640@exemplo.com,40-49 anos,F,Curitiba-PR,0,R$ 0,Não
+CPF-82C640659052,João *********,user-bdd453dd@exemplo.com,20-29 anos,M,Curitiba-PR,0,R$ 0,Não
+CPF-254AA248ACB4,Ana ********,user-5c638253@exemplo.com,40-49 anos,F,Curitiba-PR,1,R$ 1 - R$ 49,Sim
+CPF-B27338928D5B,Carlos *********,user-92587f39@exemplo.com,30-39 anos,M,Curitiba-PR,0,R$ 0,Sim
+CPF-22E17BA9C24C,Fernanda *******,user-a5467289@exemplo.com,30-39 anos,F,Curitiba-PR,0,R$ 0,Não

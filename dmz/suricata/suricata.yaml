@@ -1,0 +1,137 @@
+﻿%YAML 1.1
+---
+# Configuração do Suricata IDS/IPS — Rede de Farmácias
+# Zona: DMZ
+
+vars:
+  address-groups:
+    HOME_NET: "[172.20.0.0/24,172.21.0.0/24]"
+    EXTERNAL_NET: "!$HOME_NET"
+    HTTP_SERVERS: "172.20.0.10"   # ModSecurity WAF
+    SMTP_SERVERS: "$HOME_NET"
+    SQL_SERVERS: "172.21.0.11"    # PostgreSQL
+
+  port-groups:
+    HTTP_PORTS: "80"
+    HTTPS_PORTS: "443"
+    SHELLCODE_PORTS: "!80"
+    ORACLE_PORTS: 1521
+    SSH_PORTS: 22
+    DNP3_PORTS: 20000
+    MODBUS_PORTS: 502
+    FILE_DATA_PORTS: "[$HTTP_PORTS,110,143]"
+    FTP_PORTS: 21
+
+# Interface de captura — ajustar conforme a interface da VM Linux (ex: eth0, ens3)
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+    tpacket-v3: yes
+
+# Outputs
+outputs:
+  # Log JSON estruturado — lido pelo Wazuh Agent
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: /var/log/suricata/eve.json
+      rotate-interval: day
+      types:
+        - alert:
+            payload: yes
+            payload-buffer-size: 4kb
+            http-body: yes
+            http-body-printable: yes
+            metadata: yes
+            tagged-packets: yes
+        - http:
+            extended: yes
+        - dns:
+            query: yes
+            answer: yes
+        - tls:
+            extended: yes
+        - files:
+            force-magic: no
+        - smtp: {}
+        - flow: {}
+        - netflow: {}
+        - ssh: {}
+
+  # Log legível para operações
+  - fast:
+      enabled: yes
+      filename: /var/log/suricata/fast.log
+      append: yes
+
+  # Log de estatísticas
+  - stats:
+      enabled: yes
+      filename: /var/log/suricata/stats.log
+      append: yes
+      totals: yes
+      threads: no
+
+# Regras carregadas
+rule-files:
+  - /etc/suricata/rules/suricata.rules   # regras da comunidade (baixadas pelo container)
+  - /etc/suricata/rules/local.rules      # regras customizadas da farmácia
+
+# Configurações de detecção
+detect:
+  profile: medium
+  custom-values:
+    toclient-groups: 3
+    toserver-groups: 25
+  sgh-mpm-context: auto
+  inspection-recursion-limit: 3000
+
+# Desfragmentação
+defrag:
+  memcap: 64mb
+  hash-size: 65536
+  trackers: 65535
+  max-frags: 65535
+  prealloc: yes
+  timeout: 60
+
+# Rastreamento de fluxos
+flow:
+  memcap: 128mb
+  hash-size: 65536
+  prealloc: 10000
+  emergency-recovery: 30
+
+# Configurações do mecanismo de threads
+threading:
+  set-cpu-affinity: no
+  cpu-affinity:
+    - management-cpu-set:
+        cpu: [0]
+    - receive-cpu-set:
+        cpu: [0]
+    - worker-cpu-set:
+        cpu: ["all"]
+        mode: "exclusive"
+  detect-thread-ratio: 1.0
+
+# Protocolo IPS (inline) — modo IDS por padrão
+# Para modo IPS, mudar para "af-packet" e configurar NFQUEUE
+nfq: {}
+
+logging:
+  default-log-level: notice
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        level: info
+        filename: /var/log/suricata/suricata.log
+    - syslog:
+        enabled: no
+        facility: local5
+        format: "[%i] <%d> -- "
