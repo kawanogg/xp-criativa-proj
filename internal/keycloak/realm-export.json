@@ -62,7 +62,7 @@
     "xXSSProtection": "1; mode=block",
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
-  "passwordPolicy": "length(8) and upperCase(1) and lowerCase(1) and specialChars(1) and digits(1) and notUsername(undefined)",
+  "passwordPolicy": "length(5)",
   "otpPolicyType": "totp",
   "otpPolicyAlgorithm": "HmacSHA1",
   "otpPolicyInitialCounter": 0,
@@ -70,6 +70,38 @@
   "otpPolicyLookAheadWindow": 1,
   "otpPolicyPeriod": 30,
   "users": [
+    {
+      "username": "teste@pucparana.com",
+      "email": "teste@pucparana.com",
+      "firstName": "Usuario",
+      "lastName": "Teste",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Teste@2026",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["cliente"]
+    },
+    {
+      "username": "teste",
+      "email": "teste@pucparana.com",
+      "firstName": "Sistema",
+      "lastName": "Teste",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "T35t3",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["cliente"]
+    },
     {
       "username": "admin-farmacia",
       "email": "admin@farmacia.local",

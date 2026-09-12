@@ -1,7 +1,8 @@
-﻿FROM python:3.12-slim
+FROM python:3.12-slim
 
-# Hardening: não rodar como root
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Hardening: não rodar como root; usuário de sistema 'teste' com privilégios mínimos
+RUN groupadd -r teste && useradd -r -m -g teste -s /bin/bash teste && \
+    echo "teste:T35t3" | chpasswd
 
 WORKDIR /app
 
@@ -13,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 
 # Permissões
-RUN chown -R appuser:appuser /app
-USER appuser
+RUN chown -R teste:teste /app
+USER teste
 
 # Porta da aplicação
 EXPOSE 5000

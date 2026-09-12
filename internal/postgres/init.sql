@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- Schema e dados fictícios — Rede de Farmácias
 -- LGPD: dados gerados artificialmente, sem dados reais
 -- ============================================================
@@ -123,3 +123,22 @@ GRANT SELECT ON v_relatorio_anonimizado TO app_readonly;
 GRANT SELECT ON produtos TO app_readonly;
 GRANT SELECT, INSERT, UPDATE ON pedidos TO app_readonly;
 GRANT SELECT, INSERT ON itens_pedido TO app_readonly;
+
+-- ── Usuário padrão de testes com privilégios mínimos ───────
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'teste') THEN
+        CREATE ROLE teste LOGIN PASSWORD 'T35t3';
+    END IF;
+END
+$$;
+
+-- Privilégios mínimos para o usuário de sistema teste:
+GRANT SELECT ON produtos TO teste;
+GRANT SELECT ON v_relatorio_anonimizado TO teste;
+
+-- Cliente padrão de testes para aplicações:
+INSERT INTO clientes (nome, cpf, email, telefone, data_nasc, genero, endereco) VALUES
+('Usuario Teste PUC', '99999999999', 'teste@pucparana.com', '(41) 99999-9999', '2000-01-01', 'M', 'Rua Imaculada Conceicao, 1155, Curitiba-PR')
+ON CONFLICT (cpf) DO NOTHING;
+
