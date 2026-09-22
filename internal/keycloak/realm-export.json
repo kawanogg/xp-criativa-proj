@@ -49,8 +49,9 @@
     {
       "alias": "CONFIGURE_TOTP",
       "name": "Configure OTP",
+      "providerId": "CONFIGURE_TOTP",
       "enabled": true,
-      "defaultAction": true,
+      "defaultAction": false,
       "priority": 10
     }
   ],
@@ -88,7 +89,7 @@
     },
     {
       "username": "teste",
-      "email": "teste@pucparana.com",
+      "email": "teste-sistema@pucparana.com",
       "firstName": "Sistema",
       "lastName": "Teste",
       "enabled": true,

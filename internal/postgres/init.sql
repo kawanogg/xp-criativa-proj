@@ -111,13 +111,13 @@ SELECT
 FROM clientes c;
 
 -- ── Usuário de leitura limitada para a aplicação ──────────
-DO 
+DO $$
 BEGIN
     IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'app_readonly') THEN
         CREATE ROLE app_readonly LOGIN PASSWORD 'AppReadOnly2026!';
     END IF;
-END
-;
+END;
+$$;
 
 GRANT SELECT ON v_relatorio_anonimizado TO app_readonly;
 GRANT SELECT ON produtos TO app_readonly;

@@ -1,4 +1,4 @@
-﻿"""
+"""
 app.py — E-commerce Mock (Rede de Farmácias)
 Aplicação Flask mínima que serve como alvo dos cenários de segurança.
 Integra com PostgreSQL e Keycloak (OIDC).
@@ -30,6 +30,7 @@ DATABASE_URL    = os.environ.get('DATABASE_URL', 'postgresql://farmacia:farmacia
 KEYCLOAK_URL    = os.environ.get('KEYCLOAK_URL', 'http://keycloak:8080')
 KEYCLOAK_REALM  = os.environ.get('KEYCLOAK_REALM', 'farmacia')
 KEYCLOAK_CLIENT = os.environ.get('KEYCLOAK_CLIENT_ID', 'ecommerce-app')
+KEYCLOAK_CLIENT_SECRET = os.environ.get('KEYCLOAK_CLIENT_SECRET', 'ecommerce-secret-2026')
 
 JWKS_URL = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs"
 
@@ -138,12 +139,16 @@ def login():
 
     token_url = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
     try:
-        resp = requests.post(token_url, data={
+        login_data = {
             'grant_type': 'password',
             'client_id': KEYCLOAK_CLIENT,
             'username': data['username'],
             'password': data['password'],
-        }, timeout=10)
+        }
+        if KEYCLOAK_CLIENT_SECRET:
+            login_data['client_secret'] = KEYCLOAK_CLIENT_SECRET
+
+        resp = requests.post(token_url, data=login_data, timeout=10)
 
         if resp.status_code == 200:
             tokens = resp.json()
