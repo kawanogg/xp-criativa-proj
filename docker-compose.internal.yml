@@ -118,6 +118,7 @@ services:
       - wazuh_wodles:/var/ossec/wodles
       - filebeat_etc:/etc/filebeat
       - filebeat_var:/var/lib/filebeat
+      - ./internal/wazuh/rules/local_rules.xml:/var/ossec/etc/rules/local_rules.xml:ro
     restart: unless-stopped
 
   # ─────────────────────────────────────────────

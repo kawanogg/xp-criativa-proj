@@ -1,0 +1,108 @@
+<!--
+  Regras Customizadas Wazuh -- Rede de Farmacias (PUCPR)
+  Correlacao com Suricata IDS/IPS, ModSecurity WAF e MITRE ATT&CK
+-->
+
+<group name="farmacia_soc,">
+
+  <!-- ======================================================== -->
+  <!-- Suricata IDS/IPS - Correlacao com as regras locais       -->
+  <!-- ======================================================== -->
+
+  <!-- Cenario 1: Lateral Movement & Reconnaissance -->
+  <rule id="100101" level="12">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000001$</field>
+    <description>Farmacia SOC: Port Scan Detectado na DMZ (T1046 - Network Service Discovery)</description>
+    <mitre>
+      <id>T1046</id>
+    </mitre>
+    <group>reconnaissance,lateral_movement,mitre_t1046,</group>
+  </rule>
+
+  <rule id="100102" level="14">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000002$</field>
+    <description>Farmacia SOC: Tentativa de Movimentacao Lateral via SSH DMZ -> Rede Interna (T1021.004)</description>
+    <mitre>
+      <id>T1021.004</id>
+    </mitre>
+    <group>lateral_movement,mitre_t1021.004,</group>
+  </rule>
+
+  <rule id="100103" level="10">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000003$</field>
+    <description>Farmacia SOC: ICMP Sweep / Reconhecimento de Ativos Internos (T1018)</description>
+    <mitre>
+      <id>T1018</id>
+    </mitre>
+    <group>reconnaissance,mitre_t1018,</group>
+  </rule>
+
+  <!-- Cenario 2: Exfiltracao de Dados & DLP -->
+  <rule id="100110" level="15">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000010$</field>
+    <description>Farmacia SOC: ALERTA CRITICO - Exfiltracao de Dados via FTP (T1048.003 / LGPD)</description>
+    <mitre>
+      <id>T1048.003</id>
+    </mitre>
+    <group>exfiltration,mitre_t1048.003,lgpd,</group>
+  </rule>
+
+  <rule id="100111" level="12">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000011$</field>
+    <description>Farmacia SOC: Conexao de Saida em Porta Proibida - Possivel C2 (T1041)</description>
+    <mitre>
+      <id>T1041</id>
+    </mitre>
+    <group>command_and_control,mitre_t1041,</group>
+  </rule>
+
+  <!-- Cenario 3: Escalacao de Privilegios & Container Escape -->
+  <rule id="100120" level="15">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000020$</field>
+    <description>Farmacia SOC: ALERTA CRITICO - Tentativa de Escape de Container / Acesso Docker Socket (T1611)</description>
+    <mitre>
+      <id>T1611</id>
+    </mitre>
+    <group>privilege_escalation,container_escape,mitre_t1611,</group>
+  </rule>
+
+  <!-- Cenario 4: Evasao de Defesas -->
+  <rule id="100130" level="12">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000030$</field>
+    <description>Farmacia SOC: Evasao de Defesas via Payload Base64 Ofuscado (T1027)</description>
+    <mitre>
+      <id>T1027</id>
+    </mitre>
+    <group>defense_evasion,mitre_t1027,</group>
+  </rule>
+
+  <!-- SQL Injection -->
+  <rule id="100140" level="13">
+    <if_sid>86601</if_sid>
+    <field name="alert.signature_id">^1000040$</field>
+    <description>Farmacia SOC: Tentativa de SQL Injection detectada no trafego HTTP (T1190)</description>
+    <mitre>
+      <id>T1190</id>
+    </mitre>
+    <group>web_attack,sql_injection,mitre_t1190,</group>
+  </rule>
+
+  <!-- ======================================================== -->
+  <!-- NGINX / ModSecurity WAF - Correlacao de Bloqueios        -->
+  <!-- ======================================================== -->
+
+  <rule id="100201" level="8">
+    <if_sid>31101</if_sid>
+    <status>403</status>
+    <description>Farmacia SOC: WAF ModSecurity bloqueou requisicao (HTTP 403 Forbidden - OWASP CRS / DLP)</description>
+    <group>web,accesslog,waf_block,lgpd,</group>
+  </rule>
+
+</group>

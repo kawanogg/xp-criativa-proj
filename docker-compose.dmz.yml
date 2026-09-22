@@ -28,9 +28,8 @@ services:
       - ./dmz/suricata/suricata.yaml:/etc/suricata/suricata.yaml
       - ./dmz/suricata/rules:/etc/suricata/rules
       - suricata_logs:/var/log/suricata
-    # -i eth0: interface padrão do container Docker
-    # No ambiente Linux real, ajustar para a interface da VM (ex: ens3)
-    command: -c /etc/suricata/suricata.yaml -i eth0 --pidfile /var/run/suricata.pid
+    # -i eth0: interface padrão do container Docker (ou definida via SURICATA_IFACE)
+    command: -c /etc/suricata/suricata.yaml -i ${SURICATA_IFACE:-eth0} --pidfile /var/run/suricata.pid
     restart: unless-stopped
 
   # ─────────────────────────────────────────────
@@ -49,10 +48,11 @@ services:
     volumes:
       # Montar no diretorio de regras pós-CRS do OWASP CRS (carregamento automático)
       - ./dmz/modsecurity/modsecurity.conf:/etc/modsecurity.d/owasp-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf:ro
+      - ./dmz/modsecurity/init-logs.sh:/docker-entrypoint.d/00-init-logs.sh:ro
       - modsec_logs:/var/log/nginx
     environment:
       - SERVER_NAME=ecommerce.farmacia.local
-      - BACKEND=http://ecommerce:5000
+      - BACKEND=${BACKEND_URL:-http://ecommerce:5000}
       - MODSEC_RULE_ENGINE=on
       - MODSEC_RESP_BODY_ACCESS=on
       - MODSEC_RESP_BODY_MIMETYPE=text/plain text/html text/xml application/json
@@ -62,6 +62,7 @@ services:
       - LOGLEVEL=warn
       - ERRORLOG=/var/log/nginx/error.log
       - ACCESSLOG=/var/log/nginx/access.log
+      - METRICSLOG=/dev/stdout
     restart: unless-stopped
 
   # ─────────────────────────────────────────────
@@ -75,9 +76,10 @@ services:
         ipv4_address: 172.20.0.20
       net_interna: {}
     environment:
-      - WAZUH_MANAGER_SERVER=wazuh-manager
+      - WAZUH_MANAGER_SERVER=${WAZUH_MANAGER_IP:-wazuh-manager}
       - WAZUH_AGENT_NAME=agent-dmz
     volumes:
+      - ./dmz/wazuh-agent/ossec.conf:/wazuh-config-mount/etc/ossec.conf:ro
       - suricata_logs:/var/log/suricata:ro
       - modsec_logs:/var/log/nginx:ro
     restart: unless-stopped

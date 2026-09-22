@@ -1,2 +1,3 @@
 docs/*
+!docs/CONFIGURACAO_PFSENSE.md
 images/*
